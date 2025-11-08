@@ -51,12 +51,10 @@ if [ -d "$INSTALL_DIR/wyoming-satellite" ]; then
 else
     git clone https://github.com/rhasspy/wyoming-satellite.git
     cd $INSTALL_DIR/wyoming-satellite/
+    script/setup
 fi
 
-python3 -m venv .venv
-source .venv/bin/activate
-script/setup
-deactivate
+
 check_status "Wyoming Satellite installation"
 
 # OpenWakeword setup
