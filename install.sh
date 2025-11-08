@@ -70,9 +70,9 @@ if [ -d "$INSTALL_DIR/wyoming-openwakeword" ]; then
 else
     git clone https://github.com/rhasspy/wyoming-openwakeword.git
     cd $INSTALL_DIR/wyoming-openwakeword/
+    script/setup
 fi
 
-script/setup
 check_status "OpenWakeword installation"
 
 # Jarvis Controller Setup
