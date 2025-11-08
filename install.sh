@@ -43,8 +43,16 @@ check_status "Package installation"
 # Wyoming Satellite setup
 log "Setting up Wyoming Satellite..."
 cd $INSTALL_DIR
-git clone https://github.com/rhasspy/wyoming-satellite.git
-cd $INSTALL_DIR/wyoming-satellite/
+
+if [ -d "$INSTALL_DIR/wyoming-satellite" ]; then
+    log "Wyoming Satellite repository already exists, pulling latest changes..."
+    cd $INSTALL_DIR/wyoming-satellite
+    git pull
+else
+    git clone https://github.com/rhasspy/wyoming-satellite.git
+    cd $INSTALL_DIR/wyoming-satellite/
+fi
+
 python3 -m venv .venv
 source .venv/bin/activate
 script/setup
@@ -54,8 +62,16 @@ check_status "Wyoming Satellite installation"
 # OpenWakeword setup
 log "Setting up OpenWakeword..."
 cd $INSTALL_DIR
-git clone https://github.com/rhasspy/wyoming-openwakeword.git
-cd $INSTALL_DIR/wyoming-openwakeword/
+
+if [ -d "$INSTALL_DIR/wyoming-openwakeword" ]; then
+    log "OpenWakeword repository already exists, pulling latest changes..."
+    cd $INSTALL_DIR/wyoming-openwakeword
+    git pull
+else
+    git clone https://github.com/rhasspy/wyoming-openwakeword.git
+    cd $INSTALL_DIR/wyoming-openwakeword/
+fi
+
 script/setup
 check_status "OpenWakeword installation"
 
