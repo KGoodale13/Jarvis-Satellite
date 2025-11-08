@@ -49,10 +49,16 @@ if [ -d "$INSTALL_DIR/wyoming-satellite" ]; then
     cd $INSTALL_DIR/wyoming-satellite
     git pull
 else
-    git clone https://github.com/rhasspy/wyoming-satellite.git
-    cd $INSTALL_DIR/wyoming-satellite/
+    git clone https://github.com/rhasspy/wyoming-satellite.git 
 fi
-script/setup
+cd $INSTALL_DIR/wyoming-satellite/
+python3 -m venv .venv
+source .venv/bin/activate
+pip3 install --upgrade pip wheel setuptools
+pip3 install -f 'https://synesthesiam.github.io/prebuilt-apps/' \
+    --extra-index-url https://www.piwheels.org/simple \
+    -e
+pip install .
 
 check_status "Wyoming Satellite installation"
 
