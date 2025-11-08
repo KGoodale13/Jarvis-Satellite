@@ -19,7 +19,7 @@ from wyoming.server import AsyncEventHandler, AsyncServer
 from wyoming.snd import Played
 from wyoming.vad import VoiceStarted, VoiceStopped
 from wyoming.wake import Detection
-from jarvis_satellite.respeaker_xvf import RespeakerXVF, LEDEffect
+from .respeaker_xvf import RespeakerXVF, LEDEffect
 _LOGGER = logging.getLogger()
 
 
@@ -116,10 +116,3 @@ class LEDsEventHandler(AsyncEventHandler):
             self.respeaker_xvf.set_led_brightness(175)
 
         return True
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass

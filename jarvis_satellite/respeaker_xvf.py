@@ -1,5 +1,6 @@
 """Respeaker XVF3800 control via the XVF interface from https://github.com/respeaker/reSpeaker_XVF3800_USB_4MIC_ARRAY"""
 
+import subprocess
 from enum import Enum
 
 class XVFCommand(Enum):

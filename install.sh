@@ -117,13 +117,13 @@ log "Creating Respeaker controller"
 log "Creating service files..."
 
 # Jarvis Controller Service
-cat > /etc/systemd/system/jarvis_controller.service << EOL
+cat > /etc/systemd/system/jarvis-controller.service << EOL
 [Unit]
 Description=Jarvis Controller
 
 [Service]
 Type=simple
-ExecStart=${INSTALL_DIR}/jarvis-satellite/.venv/bin/python3 jarvis_satellite/main.py \
+ExecStart=${INSTALL_DIR}/jarvis-satellite/.venv/bin/python3 -m jarvis_satellite \
  --uri 'tcp://127.0.0.1:10500' \
  --xvf-path '${INSTALL_DIR}/jarvis-satellite/respeaker_xvf3800/host_control/rpi_64bit/xvf_host'
 WorkingDirectory=${INSTALL_DIR}/jarvis-satellite
@@ -159,8 +159,8 @@ cat > /etc/systemd/system/wyoming-satellite.service << EOL
 [Unit]
 Description=Wyoming Satellite
 Wants=network-online.target
-After=network-online.target wyoming-openwakeword.service jarvis_controller.service
-Requires=wyoming-openwakeword.service jarvis_controller.service
+After=network-online.target wyoming-openwakeword.service jarvis-controller.service
+Requires=wyoming-openwakeword.service jarvis-controller.service
 
 [Service]
 Type=simple
@@ -190,12 +190,12 @@ check_status "Service file creation"
 # Enable and start services
 log "Enabling and starting services..."
 systemctl daemon-reload
-systemctl enable wyoming-satellite.service wyoming-openwakeword.service jarvis_controller.service
-systemctl start wyoming-satellite.service wyoming-openwakeword.service jarvis_controller.service
+systemctl enable wyoming-satellite.service wyoming-openwakeword.service jarvis-controller.service
+systemctl start wyoming-satellite.service wyoming-openwakeword.service jarvis-controller.service
 check_status "Service activation"
 
 log "Installation complete! Please reboot your system."
 log "After reboot, you can check service status with:"
 log "systemctl status wyoming-satellite"
 log "systemctl status wyoming-openwakeword"
-log "systemctl status jarvis_controller"
+log "systemctl status jarvis-controller"
