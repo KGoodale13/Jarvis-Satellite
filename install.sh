@@ -47,12 +47,7 @@ git clone https://github.com/rhasspy/wyoming-satellite.git
 cd $INSTALL_DIR/wyoming-satellite/
 python3 -m venv .venv
 source .venv/bin/activate
-pip3 install --upgrade pip wheel setuptools
-pip3 install -f 'https://synesthesiam.github.io/prebuilt-apps/' \
-    -r requirements.txt \
-    -r requirements_audio_enhancement.txt \
-    -r requirements_vad.txt
-pip install .
+script/setup
 deactivate
 check_status "Wyoming Satellite installation"
 
