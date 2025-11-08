@@ -39,7 +39,7 @@ async def main() -> None:
     _LOGGER.info("Ready")
 
     # Turn on power to LEDs 
-    respeaker_xvf.set_led_effect(LEDEffect.ON)
+    respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
     respeaker_xvf.set_led_brightness(255)
     respeaker_xvf.set_led_gammify(True)
     respeaker_xvf.set_led_color(0x0080FF)
@@ -88,7 +88,7 @@ class LEDsEventHandler(AsyncEventHandler):
             self.respeaker_xvf.set_led_speed(1)
         elif VoiceStopped.is_type(event.type):
             _LOGGER.debug("VoiceStopped")
-            self.respeaker_xvf.set_led_effect(LEDEffect.ON)
+            self.respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
             self.respeaker_xvf.set_led_brightness(255)
             self.respeaker_xvf.set_led_color(0x00FFFF)
             await asyncio.sleep(0.5)
@@ -98,7 +98,7 @@ class LEDsEventHandler(AsyncEventHandler):
             self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif SatelliteConnected.is_type(event.type):
             _LOGGER.debug("SatelliteConnected")
-            self.respeaker_xvf.set_led_effect(LEDEffect.ON)
+            self.respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
             self.respeaker_xvf.set_led_brightness(255)
             self.respeaker_xvf.set_led_color(0x00FF00)
             self.respeaker_xvf.set_led_speed(5)
@@ -109,7 +109,7 @@ class LEDsEventHandler(AsyncEventHandler):
             self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif SatelliteDisconnected.is_type(event.type):
             _LOGGER.debug("SatelliteDisconnected")
-            self.respeaker_xvf.set_led_effect(LEDEffect.ON)
+            self.respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
             self.respeaker_xvf.set_led_color(0xFF0000)
             self.respeaker_xvf.set_led_speed(8)
             await asyncio.sleep(10)
