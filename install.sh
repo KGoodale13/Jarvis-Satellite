@@ -57,7 +57,7 @@ source .venv/bin/activate
 pip3 install --upgrade pip wheel setuptools
 pip3 install -f 'https://synesthesiam.github.io/prebuilt-apps/' \
     --extra-index-url https://www.piwheels.org/simple \
-    -e
+    -e .
 pip install .
 
 check_status "Wyoming Satellite installation"
