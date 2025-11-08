@@ -80,6 +80,7 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip3 install --upgrade pip wheel setuptools
 pip3 install -r requirements.txt
+pip3 install -e .
 deactivate
 chmod +x $INSTALL_DIR/jarvis-satellite/respeaker_xvf3800/host_control/rpi_64bit/xvf_host
 check_status "Jarvis Controller setup"
