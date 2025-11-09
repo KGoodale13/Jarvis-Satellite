@@ -70,6 +70,7 @@ class LEDsEventHandler(AsyncEventHandler):
         self.cli_args = cli_args
         self.client_id = str(time.monotonic_ns())
         self.respeaker_xvf = RespeakerXVF(cli_args.xvf_path)
+        self._connected = False
     
         _LOGGER.debug("Client connected: %s", self.client_id)
 
@@ -80,6 +81,8 @@ class LEDsEventHandler(AsyncEventHandler):
             _LOGGER.debug("Detection")
             self.respeaker_xvf.set_led_effect(LEDEffect.DOA)
             self.respeaker_xvf.set_led_brightness(255)
+            await asyncio.sleep(1)
+            self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif VoiceStarted.is_type(event.type):
             _LOGGER.debug("VoiceStarted")
             self.respeaker_xvf.set_led_effect(LEDEffect.BREATH)
@@ -98,21 +101,29 @@ class LEDsEventHandler(AsyncEventHandler):
             self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif SatelliteConnected.is_type(event.type):
             _LOGGER.debug("SatelliteConnected")
-            self.respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
+            self._connected = True
+            self.respeaker_xvf.set_led_effect(LEDEffect.BREATH)
             self.respeaker_xvf.set_led_brightness(255)
             self.respeaker_xvf.set_led_color(0x00FF00)
             self.respeaker_xvf.set_led_speed(5)
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif Played.is_type(event.type):
             _LOGGER.debug("Played")
             self.respeaker_xvf.set_led_effect(LEDEffect.OFF)
         elif SatelliteDisconnected.is_type(event.type):
             _LOGGER.debug("SatelliteDisconnected")
-            self.respeaker_xvf.set_led_effect(LEDEffect.SINGLE_COLOR)
-            self.respeaker_xvf.set_led_color(0xFF0000)
-            self.respeaker_xvf.set_led_speed(8)
-            await asyncio.sleep(10)
-            self.respeaker_xvf.set_led_brightness(175)
+            self._connected = False
+            await asyncio.sleep(1)
+            # if it still is disconnected, play the effect. 
+            if not self._connected:
+                self.respeaker_xvf.set_led_effect(LEDEffect.BREATH)
+                self.respeaker_xvf.set_led_color(0xFF0000)
+                self.respeaker_xvf.set_led_speed(8)
+                self.respeaker_xvf.set_led_brightness(255)
+                await asyncio.sleep(2)
+                self.respeaker_xvf.set_led_brightness(150)
+        else:
+            _LOGGER.debug(f"unhandled event type: {event.type}")
 
         return True

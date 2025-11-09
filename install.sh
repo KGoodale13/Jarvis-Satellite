@@ -130,6 +130,7 @@ Description=Jarvis Controller
 [Service]
 Type=simple
 ExecStart=${INSTALL_DIR}/jarvis-satellite/.venv/bin/python3 -m jarvis_satellite \
+ --debug
  --uri 'tcp://127.0.0.1:10500' \
  --xvf-path '${INSTALL_DIR}/jarvis-satellite/respeaker_xvf3800/host_control/rpi_64bit/xvf_host'
 WorkingDirectory=${INSTALL_DIR}/jarvis-satellite
