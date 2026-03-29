@@ -40,6 +40,12 @@ run_as_service_user() {
     sudo -H -u "${SERVICE_USER}" "$@"
 }
 
+git_safe() {
+    local repo_path="$1"
+    shift
+    git -c safe.directory="${repo_path}" -C "${repo_path}" "$@"
+}
+
 install_respeaker_udev_rule() {
     cat > /etc/udev/rules.d/99-respeaker-xvf3800.rules <<'EOF'
 SUBSYSTEM=="usb", ATTR{idVendor}=="2886", ATTR{idProduct}=="001a", MODE="0660", GROUP="audio"
@@ -163,12 +169,12 @@ install_packages() {
 
 sync_linux_voice_assistant() {
     if [[ -d "${LVA_DIR}/.git" ]]; then
-        git -C "${LVA_DIR}" fetch origin
+        git_safe "${LVA_DIR}" fetch origin
     else
         git clone "${LVA_REPO}" "${LVA_DIR}"
     fi
 
-    git -C "${LVA_DIR}" checkout "${LVA_REF}"
+    git_safe "${LVA_DIR}" checkout "${LVA_REF}"
 }
 
 setup_python_environment() {
