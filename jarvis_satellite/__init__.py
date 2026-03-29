@@ -1,4 +1,3 @@
-"""Jarvis Satellite - HomeAssistant Wyoming Satellite for RPI4 with DigiAmp+ and Respeaker XMOS3800."""
+"""Jarvis Satellite hardware integration for Linux Voice Assistant."""
 
 __version__ = "0.1.0"
-

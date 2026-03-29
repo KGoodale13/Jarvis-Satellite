@@ -1,7 +1,13 @@
 """Respeaker XVF3800 control via the XVF interface from https://github.com/respeaker/reSpeaker_XVF3800_USB_4MIC_ARRAY"""
 
+from __future__ import annotations
+
+import logging
 import subprocess
 from enum import Enum
+
+_LOGGER = logging.getLogger(__name__)
+
 
 class XVFCommand(Enum):
     LED_EFFECT = "LED_EFFECT"
@@ -22,7 +28,20 @@ class RespeakerXVF:
         self.xvf_path = xvf_path
 
     def _execute_xvf(self, command: XVFCommand, value: int) -> None:
-        subprocess.run([self.xvf_path, command.value, str(value)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try:
+            subprocess.run(
+                [self.xvf_path, command.value, str(value)],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+        except FileNotFoundError:
+            _LOGGER.warning("XVF host binary not found: %s", self.xvf_path)
+        except subprocess.TimeoutExpired:
+            _LOGGER.warning("Timed out sending %s to XVF host", command.value)
+        except subprocess.CalledProcessError:
+            _LOGGER.warning("XVF host rejected %s=%s", command.value, value)
 
     def set_led_effect(self, effect: LEDEffect) -> None:
         self._execute_xvf(XVFCommand.LED_EFFECT, effect.value)

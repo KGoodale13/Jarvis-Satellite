@@ -1,1 +1,3 @@
-wyoming>=1.8.0
+# Runtime dependencies are installed by install.sh:
+#   1. editable OHF linux-voice-assistant checkout
+#   2. editable jarvis-satellite package
