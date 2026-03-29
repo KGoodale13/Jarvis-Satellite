@@ -94,6 +94,34 @@ describe_playback_hardware() {
     aplay -l 2>/dev/null | sed 's/^/  /' || true
 }
 
+set_source_volume() {
+    local source_name="$1"
+    local volume="$2"
+    pactl set-source-volume "$source_name" "$volume"
+    log "Configured source volume for ${source_name}: ${volume}"
+}
+
+set_sink_volume() {
+    local sink_name="$1"
+    local volume="$2"
+    pactl set-sink-volume "$sink_name" "$volume"
+    log "Configured sink volume for ${sink_name}: ${volume}"
+}
+
+set_xvf_mic_gain() {
+    local gain="$1"
+    local xvf_path="${JARVIS_XVF_PATH:-}"
+    local xvf_transport="${JARVIS_XVF_TRANSPORT:-usb}"
+
+    [[ -n "$xvf_path" ]] || return 0
+
+    if "$xvf_path" --use "$xvf_transport" AUDIO_MGR_MIC_GAIN "$gain" >/dev/null 2>&1; then
+        log "Configured XVF microphone gain: ${gain}"
+    else
+        log_error "Failed to configure XVF microphone gain to ${gain}"
+    fi
+}
+
 if ! wait_for_pulse; then
     log_error "PipeWire/PulseAudio is not ready"
     exit 1
@@ -137,6 +165,8 @@ else
     fi
 fi
 
+effective_source="${default_source:-${current_source:-}}"
+
 if [[ -n "$default_sink" ]]; then
     pactl set-default-sink "$default_sink"
     log "Configured default output sink: $default_sink"
@@ -150,4 +180,18 @@ else
     else
         log "Could not identify any playback sink"
     fi
+fi
+
+effective_sink="${default_sink:-${current_sink:-}}"
+
+if [[ -n "${JARVIS_INPUT_VOLUME:-}" && -n "${effective_source:-}" ]]; then
+    set_source_volume "$effective_source" "${JARVIS_INPUT_VOLUME}"
+fi
+
+if [[ -n "${JARVIS_OUTPUT_VOLUME:-}" && -n "${effective_sink:-}" ]]; then
+    set_sink_volume "$effective_sink" "${JARVIS_OUTPUT_VOLUME}"
+fi
+
+if [[ -n "${JARVIS_XVF_MIC_GAIN:-}" ]]; then
+    set_xvf_mic_gain "${JARVIS_XVF_MIC_GAIN}"
 fi
