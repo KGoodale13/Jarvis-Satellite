@@ -9,14 +9,22 @@ STATE_DIR="/var/lib/jarvis-satellite"
 LVA_REPO="https://github.com/OHF-Voice/linux-voice-assistant.git"
 LVA_REF="0dce320db2b6ac938f93f02e1b1136d0625173b1"
 SERVICE_NAME="jarvis-satellite.service"
-SERVICE_USER="${SUDO_USER:-$(logname 2>/dev/null || true)}"
+SERVICE_USER="${JARVIS_SERVICE_USER:-${SUDO_USER:-$(logname 2>/dev/null || true)}}"
 
 if [[ -z "${SERVICE_USER}" || "${SERVICE_USER}" == "root" ]]; then
-    SERVICE_USER="pi"
+    SERVICE_USER="$(
+        getent passwd | awk -F: '
+            $3 >= 1000 && $1 != "nobody" {
+                print $1
+                exit
+            }
+        '
+    )"
 fi
 
 if ! id "${SERVICE_USER}" >/dev/null 2>&1; then
     echo "Unable to find install user '${SERVICE_USER}'"
+    echo "Set JARVIS_SERVICE_USER to the non-root account that should run the satellite."
     exit 1
 fi
 
