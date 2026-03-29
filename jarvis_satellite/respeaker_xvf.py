@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import subprocess
 from enum import Enum
+from typing import Iterable
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,13 +25,14 @@ class LEDEffect(Enum):
     DOA = 4
 
 class RespeakerXVF:
-    def __init__(self, xvf_path: str):
+    def __init__(self, xvf_path: str, transport: str = "usb"):
         self.xvf_path = xvf_path
+        self.transport = transport
 
     def _execute_xvf(self, command: XVFCommand, value: int) -> None:
         try:
             subprocess.run(
-                [self.xvf_path, command.value, str(value)],
+                self._build_command(command, value),
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -41,7 +43,26 @@ class RespeakerXVF:
         except subprocess.TimeoutExpired:
             _LOGGER.warning("Timed out sending %s to XVF host", command.value)
         except subprocess.CalledProcessError:
-            _LOGGER.warning("XVF host rejected %s=%s", command.value, value)
+            _LOGGER.warning(
+                "XVF host rejected %s=%s over transport %s",
+                command.value,
+                value,
+                self.transport,
+            )
+
+    def _build_command(self, command: XVFCommand, value: int) -> list[str]:
+        cmd = [self.xvf_path]
+        transport_args = list(self._transport_args())
+        if transport_args:
+            cmd.extend(transport_args)
+        cmd.extend([command.value, str(value)])
+        return cmd
+
+    def _transport_args(self) -> Iterable[str]:
+        normalized_transport = self.transport.strip().lower()
+        if normalized_transport:
+            return ("--use", normalized_transport)
+        return ()
 
     def set_led_effect(self, effect: LEDEffect) -> None:
         self._execute_xvf(XVFCommand.LED_EFFECT, effect.value)

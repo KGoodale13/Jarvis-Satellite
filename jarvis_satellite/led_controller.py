@@ -15,12 +15,12 @@ _LOGGER = logging.getLogger(__name__)
 class JarvisLedController:
     """Translate satellite state transitions into XVF3800 LED commands."""
 
-    def __init__(self, xvf_path: str) -> None:
+    def __init__(self, xvf_path: str, transport: str = "usb") -> None:
         resolved_path = Path(xvf_path)
         if not resolved_path.exists():
             raise FileNotFoundError(f"XVF host binary not found: {resolved_path}")
 
-        self._xvf = RespeakerXVF(str(resolved_path))
+        self._xvf = RespeakerXVF(str(resolved_path), transport=transport)
         self._lock = Lock()
         self._timer: Optional[Timer] = None
         self._generation = 0

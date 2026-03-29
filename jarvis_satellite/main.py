@@ -19,6 +19,11 @@ def _build_wrapper_parser() -> argparse.ArgumentParser:
         help="Path to the XVF host-control executable",
     )
     parser.add_argument(
+        "--xvf-transport",
+        default=os.environ.get("JARVIS_XVF_TRANSPORT", "usb"),
+        help="Transport to use with xvf_host (usb or i2c)",
+    )
+    parser.add_argument(
         "--disable-leds",
         action="store_true",
         default=os.environ.get("JARVIS_DISABLE_LEDS", "0") == "1",
@@ -41,6 +46,7 @@ async def main() -> None:
     JarvisVoiceSatelliteProtocol.configure(
         xvf_path=wrapper_args.xvf_path,
         disable_leds=wrapper_args.disable_leds,
+        xvf_transport=wrapper_args.xvf_transport,
     )
     lva_main.VoiceSatelliteProtocol = JarvisVoiceSatelliteProtocol
 

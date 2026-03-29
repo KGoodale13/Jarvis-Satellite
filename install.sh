@@ -32,6 +32,17 @@ run_as_service_user() {
     sudo -H -u "${SERVICE_USER}" "$@"
 }
 
+install_respeaker_udev_rule() {
+    cat > /etc/udev/rules.d/99-respeaker-xvf3800.rules <<'EOF'
+SUBSYSTEM=="usb", ATTR{idVendor}=="2886", ATTR{idProduct}=="001a", MODE="0660", GROUP="audio"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="2886", ATTRS{idProduct}=="001a", MODE="0660", GROUP="audio"
+EOF
+
+    udevadm control --reload-rules
+    udevadm trigger --subsystem-match=usb || true
+    udevadm trigger --subsystem-match=hidraw || true
+}
+
 configure_digiamp_overlay() {
     local cfg
     for cfg in /boot/firmware/config.txt /boot/config.txt; do
@@ -59,6 +70,7 @@ PORT="6053"
 WAKE_MODEL="hey_jarvis"
 PREFERENCES_FILE="${STATE_DIR}/preferences.json"
 JARVIS_XVF_PATH="${APP_DIR}/respeaker_xvf3800/host_control/rpi_64bit/xvf_host"
+JARVIS_XVF_TRANSPORT="usb"
 # ENABLE_DEBUG="1"
 # ENABLE_THINKING_SOUND="1"
 # NETWORK_INTERFACE="eth0"
@@ -75,17 +87,20 @@ write_service_file() {
 [Unit]
 Description=Jarvis Satellite (Linux Voice Assistant)
 Wants=network-online.target
-After=network-online.target sound.target
+Wants=user@${SERVICE_UID}.service
+After=network-online.target sound.target user@${SERVICE_UID}.service
 
 [Service]
 Type=simple
 User=${SERVICE_USER}
 Group=${SERVICE_GROUP}
+SupplementaryGroups=audio
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=-/etc/default/jarvis-satellite
 Environment=HOME=${SERVICE_HOME}
 Environment=XDG_RUNTIME_DIR=/run/user/${SERVICE_UID}
 Environment=PULSE_SERVER=unix:/run/user/${SERVICE_UID}/pulse/native
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/${SERVICE_UID}/bus
 Environment=PULSE_COOKIE=${STATE_DIR}/tmp_pulse_cookie
 ExecStartPre=${APP_DIR}/scripts/configure_audio_defaults.sh
 ExecStart=${APP_DIR}/scripts/run_satellite.sh
@@ -134,6 +149,7 @@ install_packages() {
         python3-dev \
         python3-venv \
         procps \
+        usbutils \
         wireplumber
 }
 
@@ -156,10 +172,26 @@ setup_python_environment() {
         "${APP_DIR}/.venv/bin/pip" install -e "${LVA_DIR}" -e "${APP_DIR}"
 }
 
+ensure_service_user_groups() {
+    usermod -a -G audio "${SERVICE_USER}" || true
+}
+
 enable_pipewire_for_user() {
     loginctl enable-linger "${SERVICE_USER}" || true
     systemctl start "user@${SERVICE_UID}.service" >/dev/null 2>&1 || true
     systemctl --global enable pipewire.service pipewire-pulse.service wireplumber.service >/dev/null 2>&1 || true
+    run_as_service_user env \
+        XDG_RUNTIME_DIR="/run/user/${SERVICE_UID}" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${SERVICE_UID}/bus" \
+        systemctl --user daemon-reload >/dev/null 2>&1 || true
+    run_as_service_user env \
+        XDG_RUNTIME_DIR="/run/user/${SERVICE_UID}" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${SERVICE_UID}/bus" \
+        systemctl --user enable pipewire.service pipewire-pulse.service wireplumber.service >/dev/null 2>&1 || true
+    run_as_service_user env \
+        XDG_RUNTIME_DIR="/run/user/${SERVICE_UID}" \
+        DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/${SERVICE_UID}/bus" \
+        systemctl --user restart pipewire.service pipewire-pulse.service wireplumber.service >/dev/null 2>&1 || true
 }
 
 if [[ "${EUID}" -ne 0 ]]; then
@@ -172,6 +204,10 @@ install_packages
 
 log "Configuring DigiAMP+ overlay"
 configure_digiamp_overlay
+
+log "Configuring ReSpeaker device permissions"
+ensure_service_user_groups
+install_respeaker_udev_rule
 
 log "Preparing runtime directories"
 mkdir -p "${STATE_DIR}"

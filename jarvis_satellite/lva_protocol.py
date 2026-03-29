@@ -18,11 +18,18 @@ class JarvisVoiceSatelliteProtocol(VoiceSatelliteProtocol):
 
     _configured_xvf_path: ClassVar[Optional[str]] = None
     _configured_disable_leds: ClassVar[bool] = False
+    _configured_xvf_transport: ClassVar[str] = "usb"
 
     @classmethod
-    def configure(cls, xvf_path: str | None, disable_leds: bool = False) -> None:
+    def configure(
+        cls,
+        xvf_path: str | None,
+        disable_leds: bool = False,
+        xvf_transport: str = "usb",
+    ) -> None:
         cls._configured_xvf_path = xvf_path
         cls._configured_disable_leds = disable_leds
+        cls._configured_xvf_transport = xvf_transport
 
     def __init__(self, state) -> None:
         super().__init__(state)
@@ -40,7 +47,10 @@ class JarvisVoiceSatelliteProtocol(VoiceSatelliteProtocol):
             return None
 
         try:
-            return JarvisLedController(self._configured_xvf_path)
+            return JarvisLedController(
+                self._configured_xvf_path,
+                transport=self._configured_xvf_transport,
+            )
         except FileNotFoundError:
             _LOGGER.warning(
                 "Jarvis LED integration disabled because the XVF host binary was not found: %s",

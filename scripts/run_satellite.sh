@@ -19,6 +19,7 @@ fi
 
 args=(
     "--xvf-path" "${JARVIS_XVF_PATH}"
+    "--xvf-transport" "${JARVIS_XVF_TRANSPORT:-usb}"
     "--preferences-file" "${PREFERENCES_FILE}"
     "--port" "${PORT:-6053}"
     "--wake-model" "${WAKE_MODEL:-hey_jarvis}"
