@@ -4,10 +4,9 @@ set -euo pipefail
 
 INSTALL_DIR="/opt"
 APP_DIR="${INSTALL_DIR}/jarvis-satellite"
-LVA_DIR="${INSTALL_DIR}/linux-voice-assistant"
 STATE_DIR="/var/lib/jarvis-satellite"
-LVA_REPO="https://github.com/OHF-Voice/linux-voice-assistant.git"
-LVA_REF="0dce320db2b6ac938f93f02e1b1136d0625173b1"
+WAKEWORD_REF="0dce320db2b6ac938f93f02e1b1136d0625173b1"
+WAKEWORD_BASE_URL="https://raw.githubusercontent.com/OHF-Voice/linux-voice-assistant/${WAKEWORD_REF}/wakewords"
 SERVICE_NAME="jarvis-satellite.service"
 SERVICE_USER="${JARVIS_SERVICE_USER:-${SUDO_USER:-$(logname 2>/dev/null || true)}}"
 
@@ -38,12 +37,6 @@ log() {
 
 run_as_service_user() {
     sudo -H -u "${SERVICE_USER}" "$@"
-}
-
-git_safe() {
-    local repo_path="$1"
-    shift
-    git -c safe.directory="${repo_path}" -C "${repo_path}" "$@"
 }
 
 install_respeaker_udev_rule() {
@@ -78,20 +71,33 @@ configure_digiamp_overlay() {
 }
 
 write_environment_file() {
+    if [[ -f /etc/default/jarvis-satellite ]]; then
+        if ! grep -q '^PIPECAT_SERVER_URL=' /etc/default/jarvis-satellite; then
+            echo 'PIPECAT_SERVER_URL=""' >> /etc/default/jarvis-satellite
+        fi
+        if ! grep -q '^PIPECAT_OUTPUT_SAMPLE_RATE=' /etc/default/jarvis-satellite; then
+            echo 'PIPECAT_OUTPUT_SAMPLE_RATE="24000"' >> /etc/default/jarvis-satellite
+        fi
+        if ! grep -q '^PIPECAT_CONVERSATION_TIMEOUT=' /etc/default/jarvis-satellite; then
+            echo 'PIPECAT_CONVERSATION_TIMEOUT="300"' >> /etc/default/jarvis-satellite
+        fi
+        sed -i "s|^WAKE_MODEL=.*|WAKE_MODEL=\"${APP_DIR}/wakewords/hey_jarvis.json\"|" \
+            /etc/default/jarvis-satellite
+        return
+    fi
+
     cat > /etc/default/jarvis-satellite <<EOF
-CLIENT_NAME="Jarvis Satellite"
-PORT="6053"
-WAKE_MODEL="hey_jarvis"
-PREFERENCES_FILE="${STATE_DIR}/preferences.json"
+PIPECAT_SERVER_URL="${PIPECAT_SERVER_URL:-}"
+# PIPECAT_AUTH_TOKEN=""
+WAKE_MODEL="${APP_DIR}/wakewords/hey_jarvis.json"
+PIPECAT_OUTPUT_SAMPLE_RATE="24000"
+PIPECAT_CONVERSATION_TIMEOUT="300"
 JARVIS_XVF_PATH="${APP_DIR}/respeaker_xvf3800/host_control/rpi_64bit/xvf_host"
 JARVIS_XVF_TRANSPORT="usb"
 JARVIS_INPUT_VOLUME="125%"
 JARVIS_OUTPUT_VOLUME="100%"
 JARVIS_XVF_MIC_GAIN="100"
 # ENABLE_DEBUG="1"
-# ENABLE_THINKING_SOUND="1"
-# NETWORK_INTERFACE="eth0"
-# HOST="192.168.1.100"
 # AUDIO_INPUT_DEVICE="default"
 # AUDIO_OUTPUT_DEVICE="default"
 # JARVIS_AUDIO_INPUT_NAME="alsa_input.usb-SEEED_ReSpeaker_Array_..."
@@ -102,7 +108,7 @@ EOF
 write_service_file() {
     cat > /etc/systemd/system/${SERVICE_NAME} <<EOF
 [Unit]
-Description=Jarvis Satellite (Linux Voice Assistant)
+Description=Jarvis Pipecat Voice Satellite
 Wants=network-online.target
 Wants=user@${SERVICE_UID}.service
 After=network-online.target sound.target user@${SERVICE_UID}.service
@@ -134,6 +140,7 @@ disable_legacy_services() {
         "wyoming-satellite.service"
         "wyoming-openwakeword.service"
         "jarvis-controller.service"
+        "linux-voice-assistant.service"
     )
     local service
 
@@ -157,7 +164,7 @@ install_packages() {
         git \
         iproute2 \
         libasound2-plugins \
-        libmpv-dev \
+        libpulse0 \
         pipewire \
         pipewire-alsa \
         pipewire-bin \
@@ -170,23 +177,24 @@ install_packages() {
         wireplumber
 }
 
-sync_linux_voice_assistant() {
-    if [[ -d "${LVA_DIR}/.git" ]]; then
-        git_safe "${LVA_DIR}" fetch origin
-    else
-        git clone "${LVA_REPO}" "${LVA_DIR}"
-    fi
-
-    git_safe "${LVA_DIR}" checkout "${LVA_REF}"
+install_wake_word() {
+    install -d -o "${SERVICE_USER}" -g "${SERVICE_GROUP}" "${APP_DIR}/wakewords"
+    curl --fail --location --silent --show-error \
+        "${WAKEWORD_BASE_URL}/hey_jarvis.json" \
+        --output "${APP_DIR}/wakewords/hey_jarvis.json"
+    curl --fail --location --silent --show-error \
+        "${WAKEWORD_BASE_URL}/hey_jarvis.tflite" \
+        --output "${APP_DIR}/wakewords/hey_jarvis.tflite"
+    chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${APP_DIR}/wakewords"
 }
 
 setup_python_environment() {
-    chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${APP_DIR}" "${LVA_DIR}" "${STATE_DIR}"
+    chown -R "${SERVICE_USER}:${SERVICE_GROUP}" "${APP_DIR}" "${STATE_DIR}"
 
-    run_as_service_user python3 -m venv "${APP_DIR}/.venv"
+    run_as_service_user python3 -m venv --clear "${APP_DIR}/.venv"
     run_as_service_user "${APP_DIR}/.venv/bin/pip" install --upgrade pip setuptools wheel
     run_as_service_user env CXXFLAGS="-O1 -g0" MAKEFLAGS="-j1" \
-        "${APP_DIR}/.venv/bin/pip" install -e "${LVA_DIR}" -e "${APP_DIR}"
+        "${APP_DIR}/.venv/bin/pip" install -e "${APP_DIR}"
 }
 
 ensure_service_user_groups() {
@@ -231,8 +239,8 @@ mkdir -p "${STATE_DIR}"
 touch "${STATE_DIR}/tmp_pulse_cookie"
 chmod 600 "${STATE_DIR}/tmp_pulse_cookie"
 
-log "Syncing upstream linux-voice-assistant checkout"
-sync_linux_voice_assistant
+log "Installing the local wake-word model"
+install_wake_word
 
 log "Updating Python environment"
 setup_python_environment
@@ -253,6 +261,6 @@ systemctl enable "${SERVICE_NAME}"
 systemctl restart "${SERVICE_NAME}"
 
 log "Installation complete"
-log "Home Assistant should add this device using the ESPHome integration on port 6053"
+log "Configure PIPECAT_SERVER_URL in /etc/default/jarvis-satellite"
 log "Check the service with: sudo systemctl status ${SERVICE_NAME}"
 log "A reboot is recommended if the DigiAMP+ overlay was newly enabled"

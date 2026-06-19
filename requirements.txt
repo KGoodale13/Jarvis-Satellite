@@ -1,3 +1,1 @@
-# Runtime dependencies are installed by install.sh:
-#   1. editable OHF linux-voice-assistant checkout
-#   2. editable jarvis-satellite package
+# Runtime dependencies are declared in pyproject.toml and installed by install.sh.
