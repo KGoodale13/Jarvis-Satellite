@@ -122,6 +122,38 @@ set_xvf_mic_gain() {
     fi
 }
 
+configure_aec_reference_sink() {
+    local playback_sink="$1"
+    local reference_sink="$2"
+    local combined_sink="${JARVIS_AEC_SINK_NAME:-jarvis_aec_output}"
+    local module_id
+
+    while IFS= read -r module_id; do
+        [[ -n "$module_id" ]] || continue
+        pactl unload-module "$module_id" || true
+    done < <(
+        pactl list short modules \
+            | awk -v sink_name="sink_name=${combined_sink}" \
+                '$2 == "module-combine-sink" && index($0, sink_name) { print $1 }'
+    )
+
+    pactl set-sink-volume \
+        "$reference_sink" "${JARVIS_AEC_REFERENCE_VOLUME:-100%}"
+
+    if module_id="$(pactl load-module module-combine-sink \
+        sink_name="$combined_sink" \
+        slaves="${playback_sink},${reference_sink}" \
+        sink_properties="device.description=Jarvis_AEC_Output")"; then
+        pactl set-default-sink "$combined_sink"
+        log "Configured AEC output ${combined_sink}: speaker=${playback_sink}, reference=${reference_sink}, module=${module_id}"
+        return 0
+    fi
+
+    log_error "Failed to create the XVF3800 AEC reference output; keeping ${playback_sink}"
+    pactl set-default-sink "$playback_sink"
+    return 1
+}
+
 if ! wait_for_pulse; then
     log_error "PipeWire/PulseAudio is not ready"
     exit 1
@@ -194,4 +226,19 @@ fi
 
 if [[ -n "${JARVIS_XVF_MIC_GAIN:-}" ]]; then
     set_xvf_mic_gain "${JARVIS_XVF_MIC_GAIN}"
+fi
+
+if [[ "${JARVIS_ENABLE_HARDWARE_AEC:-1}" == "1" && -n "${effective_sink:-}" ]]; then
+    aec_reference_sink="${JARVIS_AEC_REFERENCE_SINK:-}"
+    if [[ -z "$aec_reference_sink" ]]; then
+        aec_reference_sink="$(
+            match_pactl_device sinks Array respeaker reSpeaker seeed xvf xmos usb || true
+        )"
+    fi
+
+    if [[ -n "$aec_reference_sink" && "$aec_reference_sink" != "$effective_sink" ]]; then
+        configure_aec_reference_sink "$effective_sink" "$aec_reference_sink" || true
+    else
+        log_error "XVF3800 playback sink not found; hardware AEC has no far-end reference"
+    fi
 fi

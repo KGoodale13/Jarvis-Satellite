@@ -7,12 +7,18 @@ It runs on Raspberry Pi OS 64-bit and retains the existing hardware integration:
 - IQaudIO DigiAMP+ HAT for speaker output
 - local `hey_jarvis` microWakeWord detection
 - PipeWire/PulseAudio device selection, volume, and XVF microphone gain setup
+- hardware AEC reference routing from DigiAMP+ playback to the XVF3800
 
 No audio leaves the satellite while it is idle. After the wake word, it creates a
 SmallWebRTC session with Pipecat and sends a mono microphone track. Returned Opus
 audio is decoded, resampled to 24 kHz mono PCM, and played through the DigiAMP+.
 WebRTC provides jitter buffering, congestion control, clock synchronization, and
 native interruption handling.
+
+At service startup, PipeWire creates a combined output sink. It mirrors bot audio
+to the DigiAMP+ and the ReSpeaker USB playback endpoint. The USB stream supplies
+the XVF3800's far-end reference, allowing its onboard AEC to remove speaker audio
+from microphone capture. Set `JARVIS_ENABLE_HARDWARE_AEC="0"` only for diagnostics.
 
 ## Pipecat server contract
 

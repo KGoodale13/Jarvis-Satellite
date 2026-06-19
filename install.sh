@@ -84,6 +84,12 @@ write_environment_file() {
         if ! grep -q '^PIPECAT_CONVERSATION_TIMEOUT=' /etc/default/jarvis-satellite; then
             echo 'PIPECAT_CONVERSATION_TIMEOUT="300"' >> /etc/default/jarvis-satellite
         fi
+        if ! grep -q '^JARVIS_ENABLE_HARDWARE_AEC=' /etc/default/jarvis-satellite; then
+            echo 'JARVIS_ENABLE_HARDWARE_AEC="1"' >> /etc/default/jarvis-satellite
+        fi
+        if ! grep -q '^JARVIS_AEC_REFERENCE_VOLUME=' /etc/default/jarvis-satellite; then
+            echo 'JARVIS_AEC_REFERENCE_VOLUME="100%"' >> /etc/default/jarvis-satellite
+        fi
         sed -i "s|^WAKE_MODEL=.*|WAKE_MODEL=\"${APP_DIR}/wakewords/hey_jarvis.json\"|" \
             /etc/default/jarvis-satellite
         return
@@ -100,6 +106,8 @@ JARVIS_XVF_TRANSPORT="usb"
 JARVIS_INPUT_VOLUME="125%"
 JARVIS_OUTPUT_VOLUME="100%"
 JARVIS_XVF_MIC_GAIN="100"
+JARVIS_ENABLE_HARDWARE_AEC="1"
+JARVIS_AEC_REFERENCE_VOLUME="100%"
 # ENABLE_DEBUG="1"
 # AUDIO_INPUT_DEVICE="default"
 # AUDIO_OUTPUT_DEVICE="default"
