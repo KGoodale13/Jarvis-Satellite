@@ -9,10 +9,10 @@ description = "Wake-word Pipecat audio satellite for Raspberry Pi with DigiAMP+ 
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "aiortc>=1.9,<2",
     "numpy>=1.26,<3",
     "pymicro-wakeword>=2.3,<3",
     "soundcard>=0.4.4,<1",
-    "websockets>=13,<16",
 ]
 
 [project.optional-dependencies]

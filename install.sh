@@ -73,7 +73,10 @@ configure_digiamp_overlay() {
 write_environment_file() {
     if [[ -f /etc/default/jarvis-satellite ]]; then
         if ! grep -q '^PIPECAT_SERVER_URL=' /etc/default/jarvis-satellite; then
-            echo 'PIPECAT_SERVER_URL=""' >> /etc/default/jarvis-satellite
+            echo 'PIPECAT_SERVER_URL="http://pipecat:7860/api/offer"' >> /etc/default/jarvis-satellite
+        elif grep -q '^PIPECAT_SERVER_URL=""' /etc/default/jarvis-satellite; then
+            sed -i 's|^PIPECAT_SERVER_URL=""|PIPECAT_SERVER_URL="http://pipecat:7860/api/offer"|' \
+                /etc/default/jarvis-satellite
         fi
         if ! grep -q '^PIPECAT_OUTPUT_SAMPLE_RATE=' /etc/default/jarvis-satellite; then
             echo 'PIPECAT_OUTPUT_SAMPLE_RATE="24000"' >> /etc/default/jarvis-satellite
@@ -87,7 +90,7 @@ write_environment_file() {
     fi
 
     cat > /etc/default/jarvis-satellite <<EOF
-PIPECAT_SERVER_URL="${PIPECAT_SERVER_URL:-}"
+PIPECAT_SERVER_URL="${PIPECAT_SERVER_URL:-http://pipecat:7860/api/offer}"
 # PIPECAT_AUTH_TOKEN=""
 WAKE_MODEL="${APP_DIR}/wakewords/hey_jarvis.json"
 PIPECAT_OUTPUT_SAMPLE_RATE="24000"

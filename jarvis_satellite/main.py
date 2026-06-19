@@ -11,9 +11,9 @@ from pathlib import Path
 
 from .audio import SoundCardAudio
 from .led_controller import JarvisLedController
-from .pipecat_client import PipecatSession
 from .satellite import JarvisSatellite
 from .wake_word import MicroWakeWordDetector
+from .webrtc_client import SmallWebRTCSession
 
 
 def _env_float(name: str, default: float) -> float:
@@ -26,7 +26,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--server-url",
         default=os.environ.get("PIPECAT_SERVER_URL"),
         required="PIPECAT_SERVER_URL" not in os.environ,
-        help="Pipecat WebSocket URL (for example ws://server:7860/ws)",
+        help="Pipecat SmallWebRTC offer URL (for example http://server:7860/api/offer)",
     )
     parser.add_argument("--auth-token", default=os.environ.get("PIPECAT_AUTH_TOKEN"))
     parser.add_argument(
@@ -47,7 +47,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--audio-block-size",
         type=int,
-        default=int(os.environ.get("JARVIS_AUDIO_BLOCK_SIZE", "1280")),
+        default=int(os.environ.get("JARVIS_AUDIO_BLOCK_SIZE", "320")),
     )
     parser.add_argument(
         "--refractory-seconds",
@@ -104,10 +104,11 @@ async def main() -> None:
         output_sample_rate=args.output_sample_rate,
         block_size=args.audio_block_size,
     )
-    session = PipecatSession(
+    session = SmallWebRTCSession(
         server_url=args.server_url,
         auth_token=args.auth_token,
         input_sample_rate=args.input_sample_rate,
+        output_sample_rate=args.output_sample_rate,
         conversation_timeout=args.conversation_timeout,
     )
     satellite = JarvisSatellite(
