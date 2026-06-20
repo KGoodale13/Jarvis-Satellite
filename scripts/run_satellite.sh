@@ -8,7 +8,7 @@ JARVIS_XVF_PATH="${JARVIS_XVF_PATH:-${APP_DIR}/respeaker_xvf3800/host_control/rp
 WAKE_MODEL="${WAKE_MODEL:-${APP_DIR}/wakewords/hey_jarvis.json}"
 
 args=(
-    "--server-url" "${PIPECAT_SERVER_URL:?Set PIPECAT_SERVER_URL in /etc/default/jarvis-satellite}"
+    "--server-url" "${PIPECAT_SERVER_URL:-http://pipecat:7860/api/offer}"
     "--wake-model" "${WAKE_MODEL}"
     "--xvf-path" "${JARVIS_XVF_PATH}"
     "--xvf-transport" "${JARVIS_XVF_TRANSPORT:-usb}"
